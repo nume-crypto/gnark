@@ -1,14 +1,21 @@
 package dag
 
 import (
-	"sort"
+	"log"
 
 	"github.com/consensys/gnark/debug"
 )
 
+type Node int
+type Task struct {
+	Work   []Node
+	Weight int
+}
+
 type DAG struct {
 	parents  [][]int
 	children [][]int
+	nodes    []Node
 	visited  []int
 	nbNodes  int
 }
@@ -18,6 +25,7 @@ func New(nbNodes int) DAG {
 		parents:  make([][]int, nbNodes),
 		children: make([][]int, nbNodes),
 		visited:  make([]int, nbNodes),
+		nodes:    make([]Node, 0, nbNodes),
 	}
 
 	return dag
@@ -25,49 +33,58 @@ func New(nbNodes int) DAG {
 
 // AddNode adds a node to the dag
 // TODO @gbotrel right now, node is just an ID, but we probably want an interface if perf allows
-func (dag *DAG) AddNode() (n int) {
+func (dag *DAG) AddNode(node Node) (n int) {
+	dag.nodes = append(dag.nodes, node)
 	n = dag.nbNodes
 	dag.nbNodes++
 	return
 }
 
+func (dag *DAG) Reduce() {
+	// we go from bottom to top ==> if my parent has only one child and I have only one parent, I merge with him .
+	// var bottomNodes []int
+
+}
+
 // AddEdges from parents to n
 // parents is mutated and filtered to remove transitive dependencies
-func (dag *DAG) AddEdges(n int, parents []int) {
+func (dag *DAG) AddEdges(nodeID int, parents []int) {
+	// TODO @gbotrel make that optional; it slows down graph building by 5x, but speeds up "naive" clustering by ?x.
 	// sort parents in descending order
 	// the rational behind this is (n,m) are nodes, and n > m, it means n
 	// was created after m. Hence, it is impossible in our DAGs (we don't modify previous nodes)
 	// that n is a parent of m.
-	sort.Sort(sort.Reverse(sort.IntSlice(parents)))
+	// sort.Sort(sort.Reverse(sort.IntSlice(parents)))
 
-	// log.Println("parents before", dbgs(parents))
-	for i := 0; i < len(parents); i++ {
-		parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
-	}
-	// log.Println("parents after", dbgs(parents))
+	// // log.Println("parents before", dbgs(parents))
+	// for i := 0; i < len(parents); i++ {
+	// 	parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
+	// }
+	// // log.Println("parents after", dbgs(parents))
 
-	dag.parents[n] = make([]int, len(parents))
+	dag.parents[nodeID] = make([]int, len(parents))
 
 	// set parents of n
-	copy(dag.parents[n], parents)
+	copy(dag.parents[nodeID], parents)
+	// sort.Sort(sort.Reverse(sort.IntSlice(dag.parents[n])))
 
 	// for each parent, add a new children: n
 	for _, p := range parents {
-		dag.children[p] = append(dag.children[p], n)
+		dag.children[p] = append(dag.children[p], nodeID)
 	}
 
 }
 
 // Levels returns a list of level. For each level l, it is guaranteed that all dependencies
 // of the nodes in l are in previous levels
-func (dag *DAG) Levels() [][]int {
+func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 	// tag the nodes per levels
 	capacity := len(dag.children)
 	current := make([]int, 0, capacity/2)
 	next := make([]int, 0, capacity/2)
 	solved := make([]bool, capacity)
 
-	var levels [][]int
+	var levels [][]Node
 
 	// find the entry nodes: the ones without parents
 	for n, p := range dag.parents {
@@ -78,9 +95,12 @@ func (dag *DAG) Levels() [][]int {
 			current = append(current, dag.children[n]...)
 		}
 	}
-	levels = append(levels, make([]int, len(next)))
-	copy(levels[0], next)
-	sort.Ints(levels[0])
+	levels = append(levels, make([]Node, len(next)))
+	for i, n := range next {
+		levels[0][i] = dag.nodes[n]
+	}
+	// copy(levels[0], next)
+	// sort.Ints(levels[0])
 
 	level := 0
 
@@ -98,7 +118,7 @@ func (dag *DAG) Levels() [][]int {
 		}
 
 		level++
-		levels = append(levels, make([]int, 0, len(current)))
+		levels = append(levels, make([]Node, 0, len(current)))
 		for i := 0; i < len(current); i++ {
 			n := current[i]
 
@@ -123,12 +143,12 @@ func (dag *DAG) Levels() [][]int {
 			}
 
 			// all dependencies are solved, we add it to this level and push its chidren to the next
-			levels[level] = append(levels[level], n)
+			levels[level] = append(levels[level], dag.nodes[n])
 			next = append(next, dag.children[n]...)
 
 		}
 		// mark level as solved
-		sort.Ints(levels[level])
+		// sort.Ints(levels[level])
 		for _, n := range levels[level] {
 			solved[n] = true
 		}
@@ -142,9 +162,51 @@ func (dag *DAG) Levels() [][]int {
 				panic("a node missing from level clustering")
 			}
 		}
+		log.Println("nbLevels", len(levels))
 	}
 
-	return levels
+	// build the tasks
+	tasks := make([][]Task, len(levels))
+
+	if weightCb == nil {
+		weightCb = func(node Node) int {
+			return 1
+		}
+	}
+	const maxTaskWeight = 750
+
+	for i, l := range levels {
+		// for each level
+		var t Task
+		for j := 0; j < len(l); j++ {
+			if t.Weight > maxTaskWeight {
+				tasks[i] = append(tasks[i], t)
+				t = Task{}
+			}
+			t.Work = append(t.Work, l[j])
+			t.Weight += weightCb(l[j])
+		}
+		tasks[i] = append(tasks[i], t)
+	}
+
+	cpt := 0
+	for i, tLevel := range tasks {
+		max := -1
+		average := 0
+		for _, t := range tLevel {
+			cpt += len(t.Work)
+			average += t.Weight
+			if t.Weight > max {
+				max = t.Weight
+			}
+		}
+		log.Println("level", i, "nbTasks", len(tLevel), "max", max, "average", float64(average)/float64(len(tLevel)))
+	}
+	if cpt != len(solved) {
+		log.Fatal("cpt != len(solved)")
+	}
+
+	return tasks
 }
 
 func (dag *DAG) removeTransitivity(n int, set []int) []int {
@@ -178,22 +240,27 @@ func (dag *DAG) removeTransitivity(n int, set []int) []int {
 		// parents are in descending order; if min value of the set (ie the oldest node) is at
 		// the last position. If p (parent of n) is smaller than minSet, it means p is older than
 		// all set elements. p's parents will be even olders, and have no chance to appear in the set
-		minSet := set[len(set)-1]
-		if p < minSet {
+		if p < set[len(set)-1] {
 			// log.Printf("%s > %s\n", dbg(p), dbg(minSet))
 			return set
 		}
 
 		// we look for p in the set
-		i := sort.Search(len(set), func(i int) bool { return set[i] <= p })
-		if i != len(set) && set[i] == p {
-			// it is in the set, remove it
-			set = append(set[:i], set[i+1:]...)
-			continue
+		// i := binarySearch(set, p) //sort.Search(len(set), func(i int) bool { return set[i] <= p })
+		found := false
+		for i := 0; i < len(set); i++ {
+			if set[i] == p {
+				// it is in the set, remove it
+				set = append(set[:i], set[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			// it is not in the set, we check its parents
+			set = dag.removeTransitivity(p, set)
 		}
 
-		// it is not in the set, we check its parents
-		set = dag.removeTransitivity(p, set)
 	}
 
 	return set

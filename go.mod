@@ -7,6 +7,7 @@ require (
 	github.com/consensys/gnark-crypto v0.6.1-0.20220203133229-a70fdc7da969
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/leanovate/gopter v0.2.9
+	github.com/pkg/profile v1.6.0
 	github.com/stretchr/testify v1.7.0
 )
 

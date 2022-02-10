@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/fxamacker/cbor/v2"
 
@@ -31,7 +32,7 @@ import (
 	"github.com/consensys/gnark/frontend/schema"
 	"github.com/consensys/gnark/internal/backend/compiled"
 	"github.com/consensys/gnark/internal/backend/ioutils"
-	"github.com/consensys/gnark/internal/utils"
+	"github.com/consensys/gnark/internal/dag"
 
 	"github.com/consensys/gnark-crypto/ecc"
 
@@ -97,43 +98,51 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 	defer solution.printLogs(opt.LoggerOut, cs.Logs)
 
 	if len(cs.Levels) != 0 {
-		// we may parallelize
-		const pThreshold = 10
-		for _, level := range cs.Levels {
-			if len(level) < pThreshold {
-				// run in sequential
-				for _, i := range level {
-					if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-						if dID, ok := cs.MDebug[i]; ok {
-							debugInfoStr := solution.logValue(cs.DebugInfo[dID])
-							return solution.values, fmt.Errorf("%w: %s", err, debugInfoStr)
-						}
-						return solution.values, err
-					}
-				}
-			} else {
-				// run in parallel
-				chError := make(chan error, runtime.NumCPU())
-				utils.Parallelize(len(level), func(start, end int) {
-					for k := start; k < end; k++ {
-						i := level[k]
+		var wg sync.WaitGroup
+		chTasks := make(chan dag.Task, runtime.NumCPU())
+		chError := make(chan error, runtime.NumCPU())
+
+		// start a pool
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go func() {
+				for t := range chTasks {
+					for k := 0; k < len(t.Work); k++ {
+						i := t.Work[k]
 						if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-							if dID, ok := cs.MDebug[i]; ok {
+							if dID, ok := cs.MDebug[int(i)]; ok {
 								debugInfoStr := solution.logValue(cs.DebugInfo[dID])
 								chError <- fmt.Errorf("%w: %s", err, debugInfoStr)
+								wg.Done()
 								return
 							}
 							chError <- err
+							wg.Done()
 							return
 						}
 					}
-				})
-				close(chError)
-				for err := range chError {
-					return solution.values, err
+					wg.Done()
 				}
+			}()
+		}
+
+		// for each level, we push the tasks
+		for _, level := range cs.Levels {
+
+			wg.Add(len(level))
+
+			for _, t := range level {
+				chTasks <- t
+			}
+
+			wg.Wait()
+			if len(chError) > 0 {
+				close(chTasks)
+				close(chError)
+				return solution.values, <-chError
 			}
 		}
+		close(chTasks)
+		close(chError)
 
 		goto END_SOLVERLOOP
 	}

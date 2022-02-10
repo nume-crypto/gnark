@@ -152,9 +152,9 @@ HINTLOOP:
 	}
 }
 
-func buildLevels(ccs compiled.R1CS) [][]int {
+func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 	// Build DAG + levels
-	dag := dag.New(len(ccs.Constraints))
+	graph := dag.New(len(ccs.Constraints))
 
 	nbInputs := ccs.NbPublicVariables + ccs.NbSecretVariables
 
@@ -166,7 +166,7 @@ func buildLevels(ccs compiled.R1CS) [][]int {
 		dependencies = dependencies[:0]
 
 		// nodeID == cID here
-		nodeID := dag.AddNode()
+		nodeID := graph.AddNode(dag.Node(cID))
 		if debug.Debug {
 			// TODO @gbotrel too hacky.
 			if nodeID != cID {
@@ -210,11 +210,34 @@ func buildLevels(ccs compiled.R1CS) [][]int {
 
 		// note: if len(dependencies) == 0 --> it's an entry node
 		if len(dependencies) != 0 {
-			dag.AddEdges(nodeID, dependencies)
+			graph.AddEdges(nodeID, dependencies)
 		}
 	}
 
-	return dag.Levels()
+	const hintUnitCost = 3
+
+	weightLE := func(l compiled.LinearExpression) int {
+		r := 0
+		for _, t := range l {
+			wID := t.WireID()
+
+			// check if it's a hint and mark all the output wires
+			if h, ok := ccs.MHints[wID]; ok {
+				r += len(h.Wires) * hintUnitCost
+				continue
+			}
+			r++
+		}
+		return r
+	}
+
+	cb := func(n dag.Node) int {
+		c := ccs.Constraints[int(n)]
+		l, r, o := weightLE(c.L.LinExp), weightLE(c.R.LinExp), weightLE(c.O.LinExp)
+		return l + r + o
+	}
+
+	return graph.Levels(cb)
 }
 
 func (cs *r1CS) SetSchema(s *schema.Schema) {
