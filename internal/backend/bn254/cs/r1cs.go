@@ -33,7 +33,7 @@ import (
 	"github.com/consensys/gnark/internal/backend/compiled"
 	"github.com/consensys/gnark/internal/backend/ioutils"
 	"github.com/consensys/gnark/internal/dag"
-	// "github.com/pkg/profile"
+
 	"github.com/consensys/gnark-crypto/ecc"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -97,35 +97,24 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 	// (or sooner, if a constraint is not satisfied)
 	defer solution.printLogs(opt.LoggerOut, cs.Logs)
 
-	type tasks []dag.Task
-
 	if len(cs.Levels) != 0 {
+
+		type task []dag.Node // node interval to process
+
 		var wg sync.WaitGroup
-		// p := profile.Start(profile.TraceProfile, profile.ProfilePath("."), profile.NoShutdownHook)
-		chTasks := make(chan tasks, runtime.NumCPU())
+		chTasks := make(chan task, runtime.NumCPU())
 		chError := make(chan error, runtime.NumCPU())
 
 		// start a pool
 		for i := 0; i < runtime.NumCPU(); i++ {
 			go func() {
-				for ts := range chTasks {
-					for _, t := range ts {
-					for k := 0; k < len(t.Work); k++ {
-						i := t.Work[k]
+				for t := range chTasks {
+					for _, n := range t {
+						i := n.CID
 						if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-							if dID, ok := cs.MDebug[int(i)]; ok {
+							if dID, ok := cs.MDebug[i]; ok {
 								debugInfoStr := solution.logValue(cs.DebugInfo[dID])
-								chError <- fmt.Errorf("%w: %s", err, debugInfoStr)
-								wg.Done()
-
-								for {
-									select {
-									case <-chTasks:
-										wg.Done()
-									default:
-										return 
-									}
-								}
+								err = fmt.Errorf("%w: %s", err, debugInfoStr)
 							}
 							chError <- err
 							wg.Done()
@@ -134,11 +123,10 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 								case <-chTasks:
 									wg.Done()
 								default:
-									return 
+									return
 								}
 							}
 						}
-					}
 					}
 					wg.Done()
 				}
@@ -146,10 +134,10 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		}
 
 		// for each level, we push the tasks
-		var erra error 
+		var erra error
 		for _, level := range cs.Levels {
 
-			nbIterations := len(level)
+			nbIterations := len(level.Nodes)
 			nbTasks := runtime.NumCPU()
 			nbIterationsPerCpus := nbIterations / nbTasks
 
@@ -159,16 +147,15 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 				nbTasks = nbIterations
 			}
 
-
 			extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
 			extraTasksOffset := 0
 
 			for i := 0; i < nbTasks; i++ {
 				select {
-				case err := <-chError: 
-					erra = err 
+				case err := <-chError:
+					erra = err
 					goto HERE
-				default: 
+				default:
 					wg.Add(1)
 					_start := i*nbIterationsPerCpus + extraTasksOffset
 					_end := _start + nbIterationsPerCpus
@@ -177,11 +164,11 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 						extraTasks--
 						extraTasksOffset++
 					}
-					chTasks <- level[_start:_end]
+					chTasks <- level.Nodes[_start:_end]
 				}
 			}
 
-		HERE: 
+		HERE:
 			wg.Wait()
 			if erra != nil || len(chError) > 0 {
 				close(chTasks)
@@ -194,8 +181,6 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		}
 		close(chTasks)
 		close(chError)
-
-		// p.Stop()
 
 		goto END_SOLVERLOOP
 	}

@@ -17,7 +17,11 @@ limitations under the License.
 package r1cs
 
 import (
+	"log"
+	"time"
+
 	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend/hint"
 	"github.com/consensys/gnark/debug"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/schema"
@@ -124,7 +128,6 @@ HINTLOOP:
 		}
 	}
 	for i := 0; i < len(cs.DebugInfo); i++ {
-
 		for j := 0; j < len(res.DebugInfo[i].ToResolve); j++ {
 			_, vID, visibility := res.DebugInfo[i].ToResolve[j].Unpack()
 			res.DebugInfo[i].ToResolve[j].SetWireID(shiftVID(vID, visibility))
@@ -132,7 +135,9 @@ HINTLOOP:
 	}
 
 	// build levels
+	start := time.Now()
 	res.Levels = buildLevels(res)
+	log.Println("buildLevels took", time.Since(start).Milliseconds(), "ms")
 
 	switch cs.CurveID {
 	case ecc.BLS12_377:
@@ -152,7 +157,7 @@ HINTLOOP:
 	}
 }
 
-func buildLevels(ccs compiled.R1CS) [][]dag.Task {
+func buildLevels(ccs compiled.R1CS) []dag.Level {
 	// Build DAG + levels
 	graph := dag.New(len(ccs.Constraints))
 
@@ -166,17 +171,20 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 		dependencies = dependencies[:0]
 
 		// nodeID == cID here
-		nodeID := graph.AddNode(dag.Node(cID))
+		nodeID := graph.AddNode(dag.Node{CID: cID})
 		if debug.Debug {
 			// TODO @gbotrel too hacky.
 			if nodeID != cID {
 				panic("nodeID doesn't match constraint ID")
 			}
 		}
+		weight := 0
+		hasCustomHint := false
 
 		processLE := func(l compiled.LinearExpression) {
 			for _, t := range l {
 				wID := t.WireID()
+				weight++ // we need to account for linear expression eval, that's the min cost
 				if wID < nbInputs {
 					// it's a input, we ignore it
 					continue
@@ -193,6 +201,11 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 
 				// check if it's a hint and mark all the output wires
 				if h, ok := ccs.MHints[wID]; ok {
+					weight += (len(h.Inputs) + len(h.Wires)) * 10
+					if !(h.ID == hint.IsZero.UUID() || h.ID == hint.IthBit.UUID()) {
+						// it's an unknown hint, we max the weight
+						hasCustomHint = true
+					}
 					for _, hwid := range h.Wires {
 						mWires[hwid] = nodeID
 					}
@@ -200,6 +213,7 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 				}
 
 				// mark this wire solved by current node
+				weight += 20 // may have a division
 				mWires[wID] = nodeID
 			}
 		}
@@ -211,33 +225,16 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 		// note: if len(dependencies) == 0 --> it's an entry node
 		if len(dependencies) != 0 {
 			graph.AddEdges(nodeID, dependencies)
+		} else {
+			// it's an entry node
+			graph.MarkEntryNode(nodeID)
 		}
+		graph.Nodes[nodeID].Weight = weight
+		graph.Nodes[nodeID].HasCustomHint = hasCustomHint
+
 	}
 
-	const hintUnitCost = 1000 // 1 hint == 1 task .
-
-	weightLE := func(l compiled.LinearExpression) int {
-		r := 0
-		for _, t := range l {
-			wID := t.WireID()
-
-			// check if it's a hint and mark all the output wires
-			if h, ok := ccs.MHints[wID]; ok {
-				r += len(h.Wires) * len(h.Inputs) * hintUnitCost
-				continue
-			}
-			r++
-		}
-		return r
-	}
-
-	cb := func(n dag.Node) int {
-		c := ccs.Constraints[int(n)]
-		l, r, o := weightLE(c.L.LinExp), weightLE(c.R.LinExp), weightLE(c.O.LinExp)
-		return l + r + o + 10
-	}
-
-	return graph.Levels(cb)
+	return graph.Levels()
 }
 
 func (cs *r1CS) SetSchema(s *schema.Schema) {

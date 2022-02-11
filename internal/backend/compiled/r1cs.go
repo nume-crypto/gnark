@@ -24,7 +24,7 @@ type R1CS struct {
 	// each level contains independent constraints and can be parallelized
 	// it is guaranteed that all dependncies for constraints in a level l are solved
 	// in previous levels
-	Levels [][]dag.Task
+	Levels []dag.Level
 }
 
 // GetNbConstraints returns the number of constraints

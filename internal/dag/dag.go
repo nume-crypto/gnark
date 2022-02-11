@@ -2,72 +2,69 @@ package dag
 
 import (
 	"log"
-	"sort"
 
 	"github.com/consensys/gnark/debug"
 )
 
-type Node int
-type Task struct {
-	Work   []Node
-	Weight int
+type Node struct {
+	// TODO @gbotrel we could pack these 2 in one uint64
+	CID           int
+	Weight        int
+	HasCustomHint bool
 }
 
 type DAG struct {
-	parents  [][]int
-	children [][]int
-	nodes    []Node
-	visited  []int
-	nbNodes  int
+	parents    [][]int
+	children   [][]int
+	Nodes      []Node
+	visited    []int
+	nbNodes    int
+	entryNodes []int
 }
 
 func New(nbNodes int) DAG {
 	dag := DAG{
-		parents:  make([][]int, nbNodes),
-		children: make([][]int, nbNodes),
-		visited:  make([]int, nbNodes),
-		nodes:    make([]Node, 0, nbNodes),
+		parents:    make([][]int, nbNodes),
+		children:   make([][]int, nbNodes),
+		visited:    make([]int, nbNodes),
+		Nodes:      make([]Node, 0, nbNodes),
+		entryNodes: make([]int, 0),
 	}
 
 	return dag
 }
 
+func (dag *DAG) MarkEntryNode(nodeID int) {
+	dag.entryNodes = append(dag.entryNodes, nodeID)
+}
+
 // AddNode adds a node to the dag
 // TODO @gbotrel right now, node is just an ID, but we probably want an interface if perf allows
 func (dag *DAG) AddNode(node Node) (n int) {
-	dag.nodes = append(dag.nodes, node)
+	dag.Nodes = append(dag.Nodes, node)
 	n = dag.nbNodes
 	dag.nbNodes++
 	return
 }
 
-func (dag *DAG) Reduce() {
-	// we go from bottom to top ==> if my parent has only one child and I have only one parent, I merge with him .
-	// var bottomNodes []int
-
-}
-
 // AddEdges from parents to n
 // parents is mutated and filtered to remove transitive dependencies
 func (dag *DAG) AddEdges(nodeID int, parents []int) {
-	// TODO @gbotrel make that optional; it slows down graph building by 5x, but speeds up "naive" clustering by ?x.
+	// This blocks reduces transitivity. But for our current heuristic, not very helpful:
+	// slows down graph building my a more significant factor than it speeds up level building
 	// sort parents in descending order
 	// the rational behind this is (n,m) are nodes, and n > m, it means n
 	// was created after m. Hence, it is impossible in our DAGs (we don't modify previous nodes)
 	// that n is a parent of m.
-	sort.Sort(sort.Reverse(sort.IntSlice(parents)))
-
-	// // log.Println("parents before", dbgs(parents))
-	for i := 0; i < len(parents); i++ {
-		parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
-	}
-	// log.Println("parents after", dbgs(parents))
+	// sort.Sort(sort.Reverse(sort.IntSlice(parents)))
+	// for i := 0; i < len(parents); i++ {
+	// 	parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
+	// }
 
 	dag.parents[nodeID] = make([]int, len(parents))
 
 	// set parents of n
 	copy(dag.parents[nodeID], parents)
-	// sort.Sort(sort.Reverse(sort.IntSlice(dag.parents[n])))
 
 	// for each parent, add a new children: n
 	for _, p := range parents {
@@ -76,34 +73,33 @@ func (dag *DAG) AddEdges(nodeID int, parents []int) {
 
 }
 
+type Level struct {
+	TotalWeight int // nodes only .
+	Nodes       []Node
+	// Childless   []Node TODO @gbotrel ;  childless at this level could have lower priority at solving time, since
+	// we don't need them to start next level.
+}
+
 // Levels returns a list of level. For each level l, it is guaranteed that all dependencies
 // of the nodes in l are in previous levels
-func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
+func (dag *DAG) Levels() []Level {
 	// tag the nodes per levels
 	capacity := len(dag.children)
 	current := make([]int, 0, capacity/2)
 	next := make([]int, 0, capacity/2)
 	solved := make([]bool, capacity)
 
-	var levels [][]Node
-
-	// find the entry nodes: the ones without parents
-	for n, p := range dag.parents {
-		if len(p) == 0 {
-			next = append(next, n)
-			solved[n] = true // mark this node as solved
-			// push the childs to current
-			current = append(current, dag.children[n]...)
-		}
-	}
-	levels = append(levels, make([]Node, len(next)))
-	for i, n := range next {
-		levels[0][i] = dag.nodes[n]
-	}
-	// copy(levels[0], next)
-	// sort.Ints(levels[0])
-
+	var levels []Level
 	level := 0
+	levels = append(levels, Level{Nodes: make([]Node, len(dag.entryNodes))})
+	// find the entry nodes: the ones without parents
+	for i, n := range dag.entryNodes {
+		// mark this node as solved
+		solved[n] = true
+		// push the childs to current
+		current = append(current, dag.children[n]...)
+		levels[0].Nodes[i] = dag.Nodes[n]
+	}
 
 	// we use visited to tag nodes visited per level
 	// we set visited[n] = l if we visited n at level l
@@ -119,7 +115,7 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 		}
 
 		level++
-		levels = append(levels, make([]Node, 0, len(current)))
+		levels = append(levels, Level{Nodes: make([]Node, 0, len(current))})
 		for i := 0; i < len(current); i++ {
 			n := current[i]
 
@@ -132,6 +128,7 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 			// if all dependencies of n are solved, we add it to current level.
 			unsolved := false
 			for _, j := range dag.parents[n] {
+				// TODO @gbotrel; this should be nodes[j].cID
 				if !solved[j] {
 					unsolved = true
 					break
@@ -144,15 +141,18 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 			}
 
 			// all dependencies are solved, we add it to this level and push its chidren to the next
-			levels[level] = append(levels[level], dag.nodes[n])
+			levels[level].Nodes = append(levels[level].Nodes, dag.Nodes[n])
 			next = append(next, dag.children[n]...)
 
 		}
 		// mark level as solved
 		// sort.Ints(levels[level])
-		for _, n := range levels[level] {
-			solved[n] = true
+		tw := 0
+		for _, n := range levels[level].Nodes {
+			tw += n.Weight
+			solved[n.CID] = true
 		}
+		levels[level].TotalWeight = tw
 		current, next = next, current
 	}
 
@@ -166,52 +166,7 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 		log.Println("nbLevels", len(levels))
 	}
 
-	// build the tasks
-	tasks := make([][]Task, len(levels))
-
-	if weightCb == nil {
-		weightCb = func(node Node) int {
-			return 1
-		}
-	}
-	const maxTaskWeight = 100
-
-	for i, l := range levels {
-		// for each level
-		var t Task
-		for j := 0; j < len(l); j++ {
-			if t.Weight > maxTaskWeight {
-				tasks[i] = append(tasks[i], t)
-				t = Task{}
-			}
-			t.Work = append(t.Work, l[j])
-			t.Weight += weightCb(l[j])
-		}
-		tasks[i] = append(tasks[i], t)
-	}
-
-	cpt := 0
-	for i, tLevel := range tasks {
-		max := -1
-		average := 0
-		averageDependencies := 0
-		for _, t := range tLevel {
-			cpt += len(t.Work)
-			average += t.Weight
-			if t.Weight > max {
-				max = t.Weight
-			}
-			for _, w := range t.Work {
-				averageDependencies += len(dag.children[w])
-			}
-		}
-		log.Println("level", i, "nbTasks", len(tLevel), "max", max, "average", float64(average)/float64(len(tLevel)), "averageDeps", float64(averageDependencies)/(float64(len(tLevel))))
-	}
-	if cpt != len(solved) {
-		log.Fatal("cpt != len(solved)")
-	}
-
-	return tasks
+	return levels
 }
 
 func (dag *DAG) removeTransitivity(n int, set []int) []int {
