@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/hint"
 	"github.com/consensys/gnark/debug"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/schema"
@@ -171,7 +170,7 @@ func buildLevels(ccs compiled.R1CS) []dag.Level {
 		dependencies = dependencies[:0]
 
 		// nodeID == cID here
-		nodeID := graph.AddNode(dag.Node{CID: cID})
+		nodeID := graph.AddNode(dag.Node(cID))
 		if debug.Debug {
 			// TODO @gbotrel too hacky.
 			if nodeID != cID {
@@ -179,7 +178,6 @@ func buildLevels(ccs compiled.R1CS) []dag.Level {
 			}
 		}
 		weight := 0
-		hasCustomHint := false
 
 		processLE := func(l compiled.LinearExpression) {
 			for _, t := range l {
@@ -202,10 +200,10 @@ func buildLevels(ccs compiled.R1CS) []dag.Level {
 				// check if it's a hint and mark all the output wires
 				if h, ok := ccs.MHints[wID]; ok {
 					weight += (len(h.Inputs) + len(h.Wires)) * 10
-					if !(h.ID == hint.IsZero.UUID() || h.ID == hint.IthBit.UUID()) {
-						// it's an unknown hint, we max the weight
-						hasCustomHint = true
-					}
+					// if !(h.ID == hint.IsZero.UUID() || h.ID == hint.IthBit.UUID()) {
+					// 	// it's an unknown hint, we max the weight
+					// 	hasCustomHint = true
+					// }
 					for _, hwid := range h.Wires {
 						mWires[hwid] = nodeID
 					}
@@ -225,12 +223,7 @@ func buildLevels(ccs compiled.R1CS) []dag.Level {
 		// note: if len(dependencies) == 0 --> it's an entry node
 		if len(dependencies) != 0 {
 			graph.AddEdges(nodeID, dependencies)
-		} else {
-			// it's an entry node
-			graph.MarkEntryNode(nodeID)
 		}
-		graph.Nodes[nodeID].Weight = weight
-		graph.Nodes[nodeID].HasCustomHint = hasCustomHint
 
 	}
 

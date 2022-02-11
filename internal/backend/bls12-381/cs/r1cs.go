@@ -19,13 +19,12 @@ package cs
 import (
 	"errors"
 	"fmt"
+	"github.com/fxamacker/cbor/v2"
 	"io"
 	"math/big"
 	"runtime"
 	"strings"
 	"sync"
-
-	"github.com/fxamacker/cbor/v2"
 
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/witness"
@@ -35,6 +34,7 @@ import (
 	"github.com/consensys/gnark/internal/dag"
 
 	"github.com/consensys/gnark-crypto/ecc"
+	"math"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 
@@ -110,22 +110,15 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 			go func() {
 				for t := range chTasks {
 					for _, n := range t {
-						i := n.CID
+						i := n
 						if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-							if dID, ok := cs.MDebug[i]; ok {
+							if dID, ok := cs.MDebug[int(i)]; ok {
 								debugInfoStr := solution.logValue(cs.DebugInfo[dID])
 								err = fmt.Errorf("%w: %s", err, debugInfoStr)
 							}
 							chError <- err
 							wg.Done()
-							for {
-								select {
-								case <-chTasks:
-									wg.Done()
-								default:
-									return
-								}
-							}
+							return
 						}
 					}
 					wg.Done()
@@ -134,74 +127,87 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		}
 
 		// for each level, we push the tasks
-		var erra error
 		for _, level := range cs.Levels {
 
-			nbIterations := len(level.Nodes)
+			const minWork = 100.0
+
+			// max CPU to use -> max 100 nodes per CPU
+			maxCPU := float64(len(level.Nodes)) / minWork
+			if maxCPU <= 1.0 {
+				// we do it sequentially
+				for _, n := range level.Nodes {
+					i := n
+					if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
+						if dID, ok := cs.MDebug[int(i)]; ok {
+							debugInfoStr := solution.logValue(cs.DebugInfo[dID])
+							err = fmt.Errorf("%w: %s", err, debugInfoStr)
+						}
+
+						close(chTasks)
+						close(chError)
+						return solution.values, err
+					}
+				}
+				continue
+			}
+
 			nbTasks := runtime.NumCPU()
-			nbIterationsPerCpus := nbIterations / nbTasks
+			mm := int(math.Ceil(maxCPU))
+			if nbTasks > mm {
+				nbTasks = mm
+			}
+			nbIterationsPerCpus := len(level.Nodes) / nbTasks
 
 			// more CPUs than tasks: a CPU will work on exactly one iteration
 			if nbIterationsPerCpus < 1 {
 				nbIterationsPerCpus = 1
-				nbTasks = nbIterations
+				nbTasks = len(level.Nodes)
 			}
 
-			extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
+			extraTasks := len(level.Nodes) - (nbTasks * nbIterationsPerCpus)
 			extraTasksOffset := 0
 
 			for i := 0; i < nbTasks; i++ {
-				select {
-				case err := <-chError:
-					erra = err
-					goto HERE
-				default:
-					wg.Add(1)
-					_start := i*nbIterationsPerCpus + extraTasksOffset
-					_end := _start + nbIterationsPerCpus
-					if extraTasks > 0 {
-						_end++
-						extraTasks--
-						extraTasksOffset++
-					}
-					chTasks <- level.Nodes[_start:_end]
+				wg.Add(1)
+				_start := i*nbIterationsPerCpus + extraTasksOffset
+				_end := _start + nbIterationsPerCpus
+				if extraTasks > 0 {
+					_end++
+					extraTasks--
+					extraTasksOffset++
 				}
+				chTasks <- level.Nodes[_start:_end]
 			}
 
-		HERE:
 			wg.Wait()
-			if erra != nil || len(chError) > 0 {
+			if len(chError) > 0 {
 				close(chTasks)
 				close(chError)
-				if erra == nil {
-					erra = <-chError
-				}
-				return solution.values, erra
+				return solution.values, <-chError
 			}
 		}
 		close(chTasks)
 		close(chError)
 
-		goto END_SOLVERLOOP
-	}
+	} else {
 
-	// for each constraint
-	// we are guaranteed that each R1C contains at most one unsolved wire
-	// first we solve the unsolved wire (if any)
-	// then we check that the constraint is valid
-	// if a[i] * b[i] != c[i]; it means the constraint is not satisfied
-	for i := 0; i < len(cs.Constraints); i++ {
-		// solve the constraint, this will compute the missing wire of the gate
-		if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-			if dID, ok := cs.MDebug[i]; ok {
-				debugInfoStr := solution.logValue(cs.DebugInfo[dID])
-				return solution.values, fmt.Errorf("%w: %s", err, debugInfoStr)
+		// for each constraint
+		// we are guaranteed that each R1C contains at most one unsolved wire
+		// first we solve the unsolved wire (if any)
+		// then we check that the constraint is valid
+		// if a[i] * b[i] != c[i]; it means the constraint is not satisfied
+		for i := 0; i < len(cs.Constraints); i++ {
+			// solve the constraint, this will compute the missing wire of the gate
+			if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
+				if dID, ok := cs.MDebug[i]; ok {
+					debugInfoStr := solution.logValue(cs.DebugInfo[dID])
+					return solution.values, fmt.Errorf("%w: %s", err, debugInfoStr)
+				}
+				return solution.values, err
 			}
-			return solution.values, err
 		}
 	}
 
-END_SOLVERLOOP:
 	// sanity check; ensure all wires are marked as "instantiated"
 	if !solution.isValid() {
 		panic("solver didn't instantiate all wires")

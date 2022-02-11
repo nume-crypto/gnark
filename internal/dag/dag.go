@@ -6,42 +6,31 @@ import (
 	"github.com/consensys/gnark/debug"
 )
 
-type Node struct {
-	// TODO @gbotrel we could pack these 2 in one uint64
-	CID           int
-	Weight        int
-	HasCustomHint bool
-}
+type Node int
 
 type DAG struct {
-	parents    [][]int
-	children   [][]int
-	Nodes      []Node
-	visited    []int
-	nbNodes    int
-	entryNodes []int
+	parents  [][]int
+	children [][]int
+	nodes    []Node
+	visited  []int
+	nbNodes  int
 }
 
 func New(nbNodes int) DAG {
 	dag := DAG{
-		parents:    make([][]int, nbNodes),
-		children:   make([][]int, nbNodes),
-		visited:    make([]int, nbNodes),
-		Nodes:      make([]Node, 0, nbNodes),
-		entryNodes: make([]int, 0),
+		parents:  make([][]int, nbNodes),
+		children: make([][]int, nbNodes),
+		visited:  make([]int, nbNodes),
+		nodes:    make([]Node, 0, nbNodes),
 	}
 
 	return dag
 }
 
-func (dag *DAG) MarkEntryNode(nodeID int) {
-	dag.entryNodes = append(dag.entryNodes, nodeID)
-}
-
 // AddNode adds a node to the dag
 // TODO @gbotrel right now, node is just an ID, but we probably want an interface if perf allows
 func (dag *DAG) AddNode(node Node) (n int) {
-	dag.Nodes = append(dag.Nodes, node)
+	dag.nodes = append(dag.nodes, node)
 	n = dag.nbNodes
 	dag.nbNodes++
 	return
@@ -91,14 +80,23 @@ func (dag *DAG) Levels() []Level {
 
 	var levels []Level
 	level := 0
-	levels = append(levels, Level{Nodes: make([]Node, len(dag.entryNodes))})
+
 	// find the entry nodes: the ones without parents
-	for i, n := range dag.entryNodes {
-		// mark this node as solved
-		solved[n] = true
-		// push the childs to current
-		current = append(current, dag.children[n]...)
-		levels[0].Nodes[i] = dag.Nodes[n]
+	for i, p := range dag.parents {
+		if len(p) == 0 {
+			// no parents, that's an entry node
+			// mark this node as solved
+			solved[i] = true
+			// push the childs to current
+			current = append(current, dag.children[i]...)
+			next = append(next, i)
+			// levels[0].Nodes = append(levels[0].Nodes, Node(n))
+		}
+	}
+
+	levels = append(levels, Level{Nodes: make([]Node, 0, len(next))})
+	for _, n := range next {
+		levels[0].Nodes = append(levels[0].Nodes, Node(n))
 	}
 
 	// we use visited to tag nodes visited per level
@@ -141,18 +139,16 @@ func (dag *DAG) Levels() []Level {
 			}
 
 			// all dependencies are solved, we add it to this level and push its chidren to the next
-			levels[level].Nodes = append(levels[level].Nodes, dag.Nodes[n])
+			levels[level].Nodes = append(levels[level].Nodes, dag.nodes[n])
+
 			next = append(next, dag.children[n]...)
 
 		}
 		// mark level as solved
 		// sort.Ints(levels[level])
-		tw := 0
 		for _, n := range levels[level].Nodes {
-			tw += n.Weight
-			solved[n.CID] = true
+			solved[n] = true
 		}
-		levels[level].TotalWeight = tw
 		current, next = next, current
 	}
 
