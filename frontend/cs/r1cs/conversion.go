@@ -214,7 +214,7 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 		}
 	}
 
-	const hintUnitCost = 3
+	const hintUnitCost = 1000 // 1 hint == 1 task .
 
 	weightLE := func(l compiled.LinearExpression) int {
 		r := 0
@@ -223,7 +223,7 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 
 			// check if it's a hint and mark all the output wires
 			if h, ok := ccs.MHints[wID]; ok {
-				r += len(h.Wires) * hintUnitCost
+				r += len(h.Wires) * len(h.Inputs) * hintUnitCost
 				continue
 			}
 			r++
@@ -234,7 +234,7 @@ func buildLevels(ccs compiled.R1CS) [][]dag.Task {
 	cb := func(n dag.Node) int {
 		c := ccs.Constraints[int(n)]
 		l, r, o := weightLE(c.L.LinExp), weightLE(c.R.LinExp), weightLE(c.O.LinExp)
-		return l + r + o
+		return l + r + o + 10
 	}
 
 	return graph.Levels(cb)

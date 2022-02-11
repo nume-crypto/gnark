@@ -2,6 +2,7 @@ package dag
 
 import (
 	"log"
+	"sort"
 
 	"github.com/consensys/gnark/debug"
 )
@@ -54,13 +55,13 @@ func (dag *DAG) AddEdges(nodeID int, parents []int) {
 	// the rational behind this is (n,m) are nodes, and n > m, it means n
 	// was created after m. Hence, it is impossible in our DAGs (we don't modify previous nodes)
 	// that n is a parent of m.
-	// sort.Sort(sort.Reverse(sort.IntSlice(parents)))
+	sort.Sort(sort.Reverse(sort.IntSlice(parents)))
 
 	// // log.Println("parents before", dbgs(parents))
-	// for i := 0; i < len(parents); i++ {
-	// 	parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
-	// }
-	// // log.Println("parents after", dbgs(parents))
+	for i := 0; i < len(parents); i++ {
+		parents = append(parents[:i+1], dag.removeTransitivity(parents[i], parents[i+1:])...)
+	}
+	// log.Println("parents after", dbgs(parents))
 
 	dag.parents[nodeID] = make([]int, len(parents))
 
@@ -173,7 +174,7 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 			return 1
 		}
 	}
-	const maxTaskWeight = 750
+	const maxTaskWeight = 100
 
 	for i, l := range levels {
 		// for each level
@@ -193,14 +194,18 @@ func (dag *DAG) Levels(weightCb func(node Node) int) [][]Task {
 	for i, tLevel := range tasks {
 		max := -1
 		average := 0
+		averageDependencies := 0
 		for _, t := range tLevel {
 			cpt += len(t.Work)
 			average += t.Weight
 			if t.Weight > max {
 				max = t.Weight
 			}
+			for _, w := range t.Work {
+				averageDependencies += len(dag.children[w])
+			}
 		}
-		log.Println("level", i, "nbTasks", len(tLevel), "max", max, "average", float64(average)/float64(len(tLevel)))
+		log.Println("level", i, "nbTasks", len(tLevel), "max", max, "average", float64(average)/float64(len(tLevel)), "averageDeps", float64(averageDependencies)/(float64(len(tLevel))))
 	}
 	if cpt != len(solved) {
 		log.Fatal("cpt != len(solved)")

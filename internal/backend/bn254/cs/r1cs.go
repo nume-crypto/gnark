@@ -33,7 +33,7 @@ import (
 	"github.com/consensys/gnark/internal/backend/compiled"
 	"github.com/consensys/gnark/internal/backend/ioutils"
 	"github.com/consensys/gnark/internal/dag"
-	"github.com/pkg/profile"
+	// "github.com/pkg/profile"
 	"github.com/consensys/gnark-crypto/ecc"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -97,16 +97,19 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 	// (or sooner, if a constraint is not satisfied)
 	defer solution.printLogs(opt.LoggerOut, cs.Logs)
 
+	type tasks []dag.Task
+
 	if len(cs.Levels) != 0 {
 		var wg sync.WaitGroup
-		p := profile.Start(profile.TraceProfile, profile.ProfilePath("."), profile.NoShutdownHook)
-		chTasks := make(chan dag.Task, runtime.NumCPU())
+		// p := profile.Start(profile.TraceProfile, profile.ProfilePath("."), profile.NoShutdownHook)
+		chTasks := make(chan tasks, runtime.NumCPU())
 		chError := make(chan error, runtime.NumCPU())
 
 		// start a pool
 		for i := 0; i < runtime.NumCPU(); i++ {
 			go func() {
-				for t := range chTasks {
+				for ts := range chTasks {
+					for _, t := range ts {
 					for k := 0; k < len(t.Work); k++ {
 						i := t.Work[k]
 						if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
@@ -136,6 +139,7 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 							}
 						}
 					}
+					}
 					wg.Done()
 				}
 			}()
@@ -145,16 +149,38 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		var erra error 
 		for _, level := range cs.Levels {
 
-			for _, t := range level {
+			nbIterations := len(level)
+			nbTasks := runtime.NumCPU()
+			nbIterationsPerCpus := nbIterations / nbTasks
+
+			// more CPUs than tasks: a CPU will work on exactly one iteration
+			if nbIterationsPerCpus < 1 {
+				nbIterationsPerCpus = 1
+				nbTasks = nbIterations
+			}
+
+
+			extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
+			extraTasksOffset := 0
+
+			for i := 0; i < nbTasks; i++ {
 				select {
-				case err := <-chError:
+				case err := <-chError: 
 					erra = err 
 					goto HERE
-				default:
+				default: 
 					wg.Add(1)
-					chTasks <- t
+					_start := i*nbIterationsPerCpus + extraTasksOffset
+					_end := _start + nbIterationsPerCpus
+					if extraTasks > 0 {
+						_end++
+						extraTasks--
+						extraTasksOffset++
+					}
+					chTasks <- level[_start:_end]
 				}
 			}
+
 		HERE: 
 			wg.Wait()
 			if erra != nil || len(chError) > 0 {
@@ -169,7 +195,7 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		close(chTasks)
 		close(chError)
 
-		p.Stop()
+		// p.Stop()
 
 		goto END_SOLVERLOOP
 	}
