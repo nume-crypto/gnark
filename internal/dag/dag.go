@@ -2,6 +2,10 @@ package dag
 
 import (
 	"log"
+	"runtime"
+	"sort"
+	"sync"
+	"sync/atomic"
 
 	"github.com/consensys/gnark/debug"
 )
@@ -12,7 +16,7 @@ type DAG struct {
 	parents  [][]int
 	children [][]int
 	nodes    []Node
-	visited  []int
+	visited  []int64
 	nbNodes  int
 }
 
@@ -20,7 +24,7 @@ func New(nbNodes int) DAG {
 	dag := DAG{
 		parents:  make([][]int, nbNodes),
 		children: make([][]int, nbNodes),
-		visited:  make([]int, nbNodes),
+		visited:  make([]int64, nbNodes),
 		nodes:    make([]Node, 0, nbNodes),
 	}
 
@@ -63,8 +67,8 @@ func (dag *DAG) AddEdges(nodeID int, parents []int) {
 }
 
 type Level struct {
-	TotalWeight int // nodes only .
-	Nodes       []Node
+	// TotalWeight int // nodes only .
+	Nodes []int
 	// Childless   []Node TODO @gbotrel ;  childless at this level could have lower priority at solving time, since
 	// we don't need them to start next level.
 }
@@ -79,7 +83,7 @@ func (dag *DAG) Levels() []Level {
 	solved := make([]bool, capacity)
 
 	var levels []Level
-	level := 0
+	level := int64(0)
 
 	// find the entry nodes: the ones without parents
 	for i, p := range dag.parents {
@@ -94,9 +98,9 @@ func (dag *DAG) Levels() []Level {
 		}
 	}
 
-	levels = append(levels, Level{Nodes: make([]Node, 0, len(next))})
+	levels = append(levels, Level{Nodes: make([]int, 0, len(next))})
 	for _, n := range next {
-		levels[0].Nodes = append(levels[0].Nodes, Node(n))
+		levels[0].Nodes = append(levels[0].Nodes, n)
 	}
 
 	// we use visited to tag nodes visited per level
@@ -106,6 +110,64 @@ func (dag *DAG) Levels() []Level {
 		dag.visited[i] = 0
 	}
 
+	var wg sync.WaitGroup
+	type task struct {
+		r     []int
+		level int64
+	}
+	chTasks := make(chan task, runtime.NumCPU())
+	capQueue, capLevel := len(current), len(levels[0].Nodes)
+	var lock sync.RWMutex
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			localNext := make([]int, 0, capQueue)
+			localLevel := make([]int, 0, capLevel)
+			// worker
+			for t := range chTasks {
+				localLevel = localLevel[:0]
+				localNext = localNext[:0]
+
+				for i := 0; i < len(t.r); i++ {
+					n := t.r[i]
+
+					// check if we visited this node.
+					pv := atomic.SwapInt64(&dag.visited[n], level)
+					if pv == level {
+						continue
+					}
+					// dag.visited[n] = level
+
+					// if all dependencies of n are solved, we add it to current level.
+					unsolved := false
+					for _, j := range dag.parents[n] {
+						// TODO @gbotrel; this should be nodes[j].cID
+						if !solved[j] {
+							unsolved = true
+							break
+						}
+					}
+					if unsolved {
+						// add it to next
+						localNext = append(localNext, n)
+						continue
+					}
+
+					localLevel = append(localLevel, n)
+					localNext = append(localNext, dag.children[n]...)
+
+				}
+
+				lock.Lock()
+				// merge the results
+				levels[t.level].Nodes = append(levels[t.level].Nodes, localLevel...)
+				next = append(next, localNext...)
+				lock.Unlock()
+
+				wg.Done()
+			}
+		}()
+	}
+
 	for {
 		next = next[:0]
 		if len(current) == 0 {
@@ -113,37 +175,34 @@ func (dag *DAG) Levels() []Level {
 		}
 
 		level++
-		levels = append(levels, Level{Nodes: make([]Node, 0, len(current))})
-		for i := 0; i < len(current); i++ {
-			n := current[i]
+		levels = append(levels, Level{Nodes: make([]int, 0, len(current))})
 
-			// check if we visited this node.
-			if dag.visited[n] == level {
-				continue
-			}
-			dag.visited[n] = level
+		nbIterations := len(current)
+		nbTasks := runtime.NumCPU()
+		nbIterationsPerCpus := nbIterations / nbTasks
 
-			// if all dependencies of n are solved, we add it to current level.
-			unsolved := false
-			for _, j := range dag.parents[n] {
-				// TODO @gbotrel; this should be nodes[j].cID
-				if !solved[j] {
-					unsolved = true
-					break
-				}
-			}
-			if unsolved {
-				// add it to next
-				next = append(next, n)
-				continue
-			}
-
-			// all dependencies are solved, we add it to this level and push its chidren to the next
-			levels[level].Nodes = append(levels[level].Nodes, dag.nodes[n])
-
-			next = append(next, dag.children[n]...)
-
+		// more CPUs than tasks: a CPU will work on exactly one iteration
+		if nbIterationsPerCpus < 1 {
+			nbIterationsPerCpus = 1
+			nbTasks = nbIterations
 		}
+
+		extraTasks := nbIterations - (nbTasks * nbIterationsPerCpus)
+		extraTasksOffset := 0
+
+		for i := 0; i < nbTasks; i++ {
+			wg.Add(1)
+			_start := i*nbIterationsPerCpus + extraTasksOffset
+			_end := _start + nbIterationsPerCpus
+			if extraTasks > 0 {
+				_end++
+				extraTasks--
+				extraTasksOffset++
+			}
+			chTasks <- task{r: current[_start:_end], level: level}
+		}
+
+		wg.Wait()
 		// mark level as solved
 		// sort.Ints(levels[level])
 		for _, n := range levels[level].Nodes {
@@ -151,6 +210,18 @@ func (dag *DAG) Levels() []Level {
 		}
 		current, next = next, current
 	}
+
+	close(chTasks)
+
+	var wg2 sync.WaitGroup
+	wg2.Add(len(levels))
+	for _, l := range levels {
+		go func(s []int) {
+			sort.Ints(s)
+			wg2.Done()
+		}(l.Nodes)
+	}
+	wg2.Wait()
 
 	// sanity check
 	if debug.Debug {
@@ -186,10 +257,10 @@ func (dag *DAG) removeTransitivity(n int, set []int) []int {
 
 		// we tag the visited array with the nbNodes value, which is unique to this AddEdges call
 		// this enable us to re-use visited []int without mem clear between searches
-		if dag.visited[p] == dag.nbNodes {
+		if dag.visited[p] == int64(dag.nbNodes) {
 			continue
 		}
-		dag.visited[p] = dag.nbNodes
+		dag.visited[p] = int64(dag.nbNodes)
 
 		// log.Printf("processing p:%s parent of %s\n", dbg(p), dbg(n))
 

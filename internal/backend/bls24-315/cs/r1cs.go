@@ -31,7 +31,6 @@ import (
 	"github.com/consensys/gnark/frontend/schema"
 	"github.com/consensys/gnark/internal/backend/compiled"
 	"github.com/consensys/gnark/internal/backend/ioutils"
-	"github.com/consensys/gnark/internal/dag"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"math"
@@ -99,7 +98,7 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 
 	if len(cs.Levels) != 0 {
 
-		type task []dag.Node // node interval to process
+		type task []int // node interval to process
 
 		var wg sync.WaitGroup
 		chTasks := make(chan task, runtime.NumCPU())
