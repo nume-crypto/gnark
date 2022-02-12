@@ -98,20 +98,17 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 
 	if len(cs.Levels) != 0 {
 
-		type task []int // node interval to process
-
 		var wg sync.WaitGroup
-		chTasks := make(chan task, runtime.NumCPU())
+		chTasks := make(chan []int, runtime.NumCPU())
 		chError := make(chan error, runtime.NumCPU())
 
 		// start a pool
 		for i := 0; i < runtime.NumCPU(); i++ {
 			go func() {
 				for t := range chTasks {
-					for _, n := range t {
-						i := n
+					for _, i := range t {
 						if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
-							if dID, ok := cs.MDebug[int(i)]; ok {
+							if dID, ok := cs.MDebug[i]; ok {
 								debugInfoStr := solution.logValue(cs.DebugInfo[dID])
 								err = fmt.Errorf("%w: %s", err, debugInfoStr)
 							}
@@ -128,13 +125,13 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 		// for each level, we push the tasks
 		for _, level := range cs.Levels {
 
-			const minWork = 100.0
+			const minWorkPerCPU = 50.0
 
-			// max CPU to use -> max 100 nodes per CPU
-			maxCPU := float64(len(level.Nodes)) / minWork
+			// max CPU to use
+			maxCPU := float64(len(level)) / minWorkPerCPU
 			if maxCPU <= 1.0 {
 				// we do it sequentially
-				for _, n := range level.Nodes {
+				for _, n := range level {
 					i := n
 					if err := cs.solveConstraint(cs.Constraints[i], &solution, &a[i], &b[i], &c[i]); err != nil {
 						if dID, ok := cs.MDebug[int(i)]; ok {
@@ -155,15 +152,15 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 			if nbTasks > mm {
 				nbTasks = mm
 			}
-			nbIterationsPerCpus := len(level.Nodes) / nbTasks
+			nbIterationsPerCpus := len(level) / nbTasks
 
 			// more CPUs than tasks: a CPU will work on exactly one iteration
 			if nbIterationsPerCpus < 1 {
 				nbIterationsPerCpus = 1
-				nbTasks = len(level.Nodes)
+				nbTasks = len(level)
 			}
 
-			extraTasks := len(level.Nodes) - (nbTasks * nbIterationsPerCpus)
+			extraTasks := len(level) - (nbTasks * nbIterationsPerCpus)
 			extraTasksOffset := 0
 
 			for i := 0; i < nbTasks; i++ {
@@ -175,7 +172,7 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 					extraTasks--
 					extraTasksOffset++
 				}
-				chTasks <- level.Nodes[_start:_end]
+				chTasks <- level[_start:_end]
 			}
 
 			wg.Wait()

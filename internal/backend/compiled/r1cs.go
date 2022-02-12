@@ -14,8 +14,6 @@
 
 package compiled
 
-import "github.com/consensys/gnark/internal/dag"
-
 // R1CS decsribes a set of R1C constraint
 type R1CS struct {
 	CS
@@ -24,7 +22,7 @@ type R1CS struct {
 	// each level contains independent constraints and can be parallelized
 	// it is guaranteed that all dependncies for constraints in a level l are solved
 	// in previous levels
-	Levels []dag.Level
+	Levels [][]int
 }
 
 // GetNbConstraints returns the number of constraints

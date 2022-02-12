@@ -17,11 +17,7 @@ limitations under the License.
 package r1cs
 
 import (
-	"log"
-	"time"
-
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/debug"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/schema"
 	bls12377r1cs "github.com/consensys/gnark/internal/backend/bls12-377/cs"
@@ -31,7 +27,6 @@ import (
 	bw6633r1cs "github.com/consensys/gnark/internal/backend/bw6-633/cs"
 	bw6761r1cs "github.com/consensys/gnark/internal/backend/bw6-761/cs"
 	"github.com/consensys/gnark/internal/backend/compiled"
-	"github.com/consensys/gnark/internal/dag"
 )
 
 // Compile constructs a rank-1 constraint sytem
@@ -134,9 +129,7 @@ HINTLOOP:
 	}
 
 	// build levels
-	start := time.Now()
 	res.Levels = buildLevels(res)
-	log.Println("buildLevels took", time.Since(start).Milliseconds(), "ms")
 
 	switch cs.CurveID {
 	case ecc.BLS12_377:
@@ -156,78 +149,69 @@ HINTLOOP:
 	}
 }
 
-func buildLevels(ccs compiled.R1CS) []dag.Level {
-	// Build DAG + levels
-	graph := dag.New(len(ccs.Constraints))
+func buildLevels(ccs compiled.R1CS) [][]int {
 
 	nbInputs := ccs.NbPublicVariables + ccs.NbSecretVariables
 
-	mWires := make(map[int]int, ccs.NbInternalVariables) // at which node we resolved which wire.
-	dependencies := make([]int, 0, len(ccs.Constraints)) // collect constraint dependencies
+	mWireToNode := make(map[int]int, ccs.NbInternalVariables) // at which node we resolved which wire
+	nodeLevels := make([]int, len(ccs.Constraints))           // level of a node
+	mLevels := make(map[int]int)                              // level counts
 
 	for cID, c := range ccs.Constraints {
-		// clear dependencies
-		dependencies = dependencies[:0]
 
-		// nodeID == cID here
-		nodeID := graph.AddNode(dag.Node(cID))
-		if debug.Debug {
-			// TODO @gbotrel too hacky.
-			if nodeID != cID {
-				panic("nodeID doesn't match constraint ID")
-			}
-		}
-		weight := 0
+		nodeLevel := 0
 
 		processLE := func(l compiled.LinearExpression) {
 			for _, t := range l {
 				wID := t.WireID()
-				weight++ // we need to account for linear expression eval, that's the min cost
 				if wID < nbInputs {
 					// it's a input, we ignore it
 					continue
 				}
 
 				// if we know a which constraint solves this wire, then it's a dependency
-				n, ok := mWires[wID]
+				n, ok := mWireToNode[wID]
 				if ok {
-					if n != nodeID { // can happen with hints...
-						dependencies = append(dependencies, n)
+					if n != cID { // can happen with hints...
+						// we add a dependency, check if we need to increment our current level
+						if nodeLevels[n] >= nodeLevel {
+							nodeLevel = nodeLevels[n] + 1 // we are at the next level at least since we depend on it
+						}
 					}
 					continue
 				}
 
 				// check if it's a hint and mark all the output wires
 				if h, ok := ccs.MHints[wID]; ok {
-					weight += (len(h.Inputs) + len(h.Wires)) * 10
-					// if !(h.ID == hint.IsZero.UUID() || h.ID == hint.IthBit.UUID()) {
-					// 	// it's an unknown hint, we max the weight
-					// 	hasCustomHint = true
-					// }
 					for _, hwid := range h.Wires {
-						mWires[hwid] = nodeID
+						mWireToNode[hwid] = cID
 					}
 					continue
 				}
 
 				// mark this wire solved by current node
-				weight += 20 // may have a division
-				mWires[wID] = nodeID
+				mWireToNode[wID] = cID
 			}
 		}
 
 		processLE(c.L.LinExp)
 		processLE(c.R.LinExp)
 		processLE(c.O.LinExp)
-
-		// note: if len(dependencies) == 0 --> it's an entry node
-		if len(dependencies) != 0 {
-			graph.AddEdges(nodeID, dependencies)
-		}
+		nodeLevels[cID] = nodeLevel
+		mLevels[nodeLevel]++
 
 	}
 
-	return graph.Levels()
+	levels := make([][]int, len(mLevels))
+	for i := 0; i < len(levels); i++ {
+		levels[i] = make([]int, 0, mLevels[i])
+	}
+
+	for n, l := range nodeLevels {
+		levels[l] = append(levels[l], n)
+	}
+
+	return levels
 }
 
 func (cs *r1CS) SetSchema(s *schema.Schema) {
