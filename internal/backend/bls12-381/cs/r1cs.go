@@ -129,7 +129,7 @@ func (cs *R1CS) Solve(witness, a, b, c []fr.Element, opt backend.ProverConfig) (
 
 			// max CPU to use
 			maxCPU := float64(len(level)) / minWorkPerCPU
-			if maxCPU <= 1.0 {
+			if true { // maxCPU <= 1.0 {
 				// we do it sequentially
 				for _, n := range level {
 					i := n
