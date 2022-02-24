@@ -124,7 +124,7 @@ func (cs *R1CS) parallelSolve(a, b, c []fr.Element, solution *solution) error {
 
 		// we don't use 1 here, because some tasks may be imbalanced (computationally expensive hints)
 		// so having more chunks than worker helps finish the work sooner ("work stealing")
-		chunkFactor = 2
+		chunkFactor = 3
 	)
 
 	nbTasks := runtime.NumCPU() * chunkFactor
