@@ -21,7 +21,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/fxamacker/cbor/v2"
 	"io"
-	"math"
 	"math/big"
 	"os"
 	"runtime"
@@ -120,13 +119,26 @@ func (cs *SparseR1CS) Solve(witness []fr.Element, opt backend.ProverConfig) ([]f
 }
 
 func (cs *SparseR1CS) parallelSolve(solution *solution, coefficientsNegInv []fr.Element) error {
-	// minWorkPerCPU is the minimum target number of constraint a task should hold
-	// in other words, if a level has less than minWorkPerCPU, it will not be parallelized and executed
-	// sequentially without sync.
-	const minWorkPerCPU = 50.0
-
 	// cs.Levels has a list of levels, where all constraints in a level l(n) are independent
 	// and may only have dependencies on previous levels
+	//
+	// first, spawn a go-routine pool of runtime.NumCPU()
+	// for each level
+	// 		1. decompose into chunks
+	//			chunkSize := len(level) / (numCPU * chunkFactor) ;
+	//			if chunkSize < minChunkSize --> do sequentially
+	// 		2. push the chunks in a task queue (chTasks)
+	//		3. wait and check for error before scheduling next level
+	const (
+		// this is empiric and determines when we run a level sequentially or in parallel
+		minChunkSize = 5
+
+		// we don't use 1 here, because some tasks may be imbalanced (computationally expensive hints)
+		// so having more chunks than worker helps finish the work sooner ("work stealing")
+		chunkFactor = 2
+	)
+
+	nbTasks := runtime.NumCPU() * chunkFactor
 
 	var wg sync.WaitGroup
 	chTasks := make(chan []int, runtime.NumCPU())
@@ -143,6 +155,11 @@ func (cs *SparseR1CS) parallelSolve(solution *solution, coefficientsNegInv []fr.
 					if err := cs.solveConstraint(cs.Constraints[i], solution, coefficientsNegInv); err != nil {
 						chError <- fmt.Errorf("constraint #%d is not satisfied: %w", i, err)
 						wg.Done()
+						// before removing self from the pool, we clean up since the task producer
+						// may be waiting to push more.
+						for range chTasks {
+							wg.Done()
+						}
 						return
 					}
 					if err := cs.checkConstraint(cs.Constraints[i], solution); err != nil {
@@ -152,6 +169,11 @@ func (cs *SparseR1CS) parallelSolve(solution *solution, coefficientsNegInv []fr.
 						}
 						chError <- fmt.Errorf("constraint #%d is not satisfied: %s", i, errMsg)
 						wg.Done()
+						// before removing self from the pool, we clean up since the task producer
+						// may be waiting to push more.
+						for range chTasks {
+							wg.Done()
+						}
 						return
 					}
 				}
@@ -169,10 +191,11 @@ func (cs *SparseR1CS) parallelSolve(solution *solution, coefficientsNegInv []fr.
 	// for each level, we push the tasks
 	for _, level := range cs.Levels {
 
-		// max CPU to use
-		maxCPU := float64(len(level)) / minWorkPerCPU
+		chunkSize := len(level) / nbTasks
 
-		if maxCPU <= 1.0 {
+		// we do it sequentially since the chunks are too small
+		// note: we could probably use less CPU here
+		if chunkSize < minChunkSize {
 			// we do it sequentially
 			for _, i := range level {
 				if err := cs.solveConstraint(cs.Constraints[i], solution, coefficientsNegInv); err != nil {
@@ -189,36 +212,20 @@ func (cs *SparseR1CS) parallelSolve(solution *solution, coefficientsNegInv []fr.
 			continue
 		}
 
-		// number of tasks for this level is set to num cpus
-		// but if we don't have enough work for all our CPUS, it can be lower.
-		nbTasks := runtime.NumCPU()
-		maxTasks := int(math.Ceil(maxCPU))
-		if nbTasks > maxTasks {
-			nbTasks = maxTasks
-		}
-		nbIterationsPerCpus := len(level) / nbTasks
-
-		// more CPUs than tasks: a CPU will work on exactly one iteration
-		// note: this depends on minWorkPerCPU constant
-		if nbIterationsPerCpus < 1 {
-			nbIterationsPerCpus = 1
-			nbTasks = len(level)
-		}
-
-		extraTasks := len(level) - (nbTasks * nbIterationsPerCpus)
+		extraTasks := len(level) - (nbTasks * chunkSize)
 		extraTasksOffset := 0
 
 		for i := 0; i < nbTasks; i++ {
-			wg.Add(1)
-			_start := i*nbIterationsPerCpus + extraTasksOffset
-			_end := _start + nbIterationsPerCpus
+
+			_start := i*chunkSize + extraTasksOffset
+			_end := _start + chunkSize
 			if extraTasks > 0 {
 				_end++
 				extraTasks--
 				extraTasksOffset++
 			}
-			// since we're never pushing more than num CPU tasks
-			// we will never be blocked here
+
+			wg.Add(1)
 			chTasks <- level[_start:_end]
 		}
 
