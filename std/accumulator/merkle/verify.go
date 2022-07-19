@@ -50,15 +50,15 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 )
 
-// leafSum returns the hash created from data inserted to form a leaf.
-// Without domain separation.
-func leafSum(api frontend.API, h mimc.MiMC, data frontend.Variable) frontend.Variable {
+// // leafSum returns the hash created from data inserted to form a leaf.
+// // Without domain separation.
+// func leafSum(api frontend.API, h mimc.MiMC, data frontend.Variable) frontend.Variable {
 
-	h.Write(data)
-	res := h.Sum()
+// 	h.Write(data)
+// 	res := h.Sum()
 
-	return res
-}
+// 	return res
+// }
 
 // nodeSum returns the hash created from data inserted to form a leaf.
 // Without domain separation.
@@ -134,7 +134,7 @@ func GenerateProofHelper(proofSet [][]byte, proofIndex, numLeaves uint64) []int 
 // 'numLeaves' equals 0.
 func VerifyProof(api frontend.API, h mimc.MiMC, merkleRoot frontend.Variable, proofSet, helper []frontend.Variable) {
 
-	sum := leafSum(api, h, proofSet[0])
+	sum := proofSet[0]
 
 	for i := 1; i < len(proofSet); i++ {
 		api.AssertIsBoolean(helper[i-1])
