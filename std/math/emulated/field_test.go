@@ -12,9 +12,12 @@ import (
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/internal/backend/circuits"
 	"github.com/consensys/gnark/std/algebra/fields_bls12377"
+	"github.com/consensys/gnark/std/algebra/fields_bn254"
 	"github.com/consensys/gnark/std/algebra/sw_bls12377"
+	"github.com/consensys/gnark/std/algebra/sw_bn254"
 	"github.com/consensys/gnark/test"
 	bls12377 "github.com/nume-crypto/gnark-crypto/ecc/bls12-377"
+	bn254 "github.com/nume-crypto/gnark-crypto/ecc/bn254"
 	"github.com/stretchr/testify/require"
 )
 
@@ -242,6 +245,103 @@ func TestAddG1BLS377(t *testing.T) {
 	assert.NoError(err)
 	// _, err = frontend.Compile(testCurve.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithBuilderWrapper(builderWrapper[BLS12377Fp]()))
 	// assert.NoError(err)
+	// TODO: create proof
+}
+
+type addingG2BN254 struct {
+	P           sw_bn254.G2Affine `gnark:",public"`
+	Q           sw_bn254.G2Affine
+	additionRes bn254.G2Affine
+}
+
+//lint:ignore U1000 skipped test
+func (circuit *addingG2BN254) Define(api frontend.API) error {
+	additionRes := circuit.P.Neg(api, circuit.Q)
+	api.AssertIsEqual(additionRes.X.A0, &circuit.additionRes.X.A0)
+	api.AssertIsEqual(additionRes.X.A1, &circuit.additionRes.X.A1)
+	api.AssertIsEqual(additionRes.Y.A0, &circuit.additionRes.Y.A0)
+	api.AssertIsEqual(additionRes.Y.A1, &circuit.additionRes.Y.A1)
+	return nil
+}
+
+func TestAddG2BN254(t *testing.T) {
+	assert := test.NewAssert(t)
+
+	_, _, _, Q := bn254.Generators()
+
+	var QCopy bn254.G2Affine
+	QCopy.Set(&Q)
+	var additionRes bn254.G2Affine
+	additionRes = *Q.Neg(&QCopy)
+	// additionRes = *additionRes(&Q, &Q)
+
+	// additionResXBytes := additionRes.X.A0.Bytes()
+	// fmt.Println(additionResXBytes)
+	// add := additionResXBytes[:]
+	// b := big.NewInt(0)
+	// b.SetBytes(add)
+	// fmt.Println(b)
+
+	circuit := addingG2BN254{
+		additionRes: additionRes,
+		P: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+		},
+		Q: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+		},
+	}
+	witness := addingG2BN254{
+		additionRes: additionRes,
+		P: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.X.A0),
+				A1: NewElement[BN254Fp](Q.X.A1),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.Y.A0),
+				A1: NewElement[BN254Fp](Q.Y.A1),
+			},
+		},
+		Q: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.X.A0),
+				A1: NewElement[BN254Fp](Q.X.A1),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.Y.A0),
+				A1: NewElement[BN254Fp](Q.Y.A1),
+			},
+		},
+	}
+
+	wrapperOpt := test.WithApiWrapper(func(api frontend.API) frontend.API {
+		napi, err := NewField[BN254Fp](api)
+		assert.NoError(err)
+		return napi
+	})
+	// TODO @gbotrel test engine when test.SetAllVariablesAsConstants() also consider witness as
+	// constant. It shouldn't.
+	// assert.ProverSucceeded(&circuit, &witness, test.WithCurves(testCurve), test.NoSerialization(), test.WithBackends(backend.GROTH16))
+
+	err := test.IsSolved(&circuit, &witness, testCurve.ScalarField(), wrapperOpt) //, test.SetAllVariablesAsConstants())
+	// assert.NoError(err)
+	// _, err = frontend.Compile(testCurve.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithBuilderWrapper(builderWrapper[BLS12377Fp]()))
+	assert.NoError(err)
 	// TODO: create proof
 }
 
