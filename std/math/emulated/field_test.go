@@ -8,13 +8,16 @@ import (
 	"sort"
 	"testing"
 
+	bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/internal/backend/circuits"
 	"github.com/consensys/gnark/std/algebra/fields_bls12377"
+	"github.com/consensys/gnark/std/algebra/fields_bn254"
 	"github.com/consensys/gnark/std/algebra/sw_bls12377"
+	"github.com/consensys/gnark/std/algebra/sw_bn254"
 	"github.com/consensys/gnark/test"
-	bls12377 "github.com/nume-crypto/gnark-crypto/ecc/bls12-377"
 	"github.com/stretchr/testify/require"
 )
 
@@ -191,6 +194,95 @@ func TestVarToElements(t *testing.T) {
 	}()
 	in := []frontend.Variable{8000, nil, 3000}
 	_ = f.varsToElements(in)
+}
+
+type negG2BN254 struct {
+	P           sw_bn254.G2Affine `gnark:",public"`
+	Q           sw_bn254.G2Affine
+	negationRes bn254.G2Affine
+}
+
+//lint:ignore U1000 skipped test
+func (circuit *negG2BN254) Define(api frontend.API) error {
+	negRes := circuit.P.Neg(api, circuit.Q)
+	api.AssertIsEqual(negRes.X.A0, &circuit.negationRes.X.A0)
+	api.AssertIsEqual(negRes.X.A1, &circuit.negationRes.X.A1)
+	api.AssertIsEqual(negRes.Y.A0, &circuit.negationRes.Y.A0)
+	api.AssertIsEqual(negRes.Y.A1, &circuit.negationRes.Y.A1)
+	return nil
+}
+
+func TestNegG2BN254(t *testing.T) {
+	assert := test.NewAssert(t)
+
+	_, _, _, Q := bn254.Generators()
+
+	var QCopy bn254.G2Affine
+	QCopy.Set(&Q)
+	var negRes bn254.G2Affine
+	negRes = *Q.Neg(&QCopy)
+
+	circuit := negG2BN254{
+		negationRes: negRes,
+		P: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+		},
+		Q: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](nil),
+				A1: NewElement[BN254Fp](nil),
+			},
+		},
+	}
+	witness := negG2BN254{
+		negationRes: negRes,
+		P: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.X.A0),
+				A1: NewElement[BN254Fp](Q.X.A1),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.Y.A0),
+				A1: NewElement[BN254Fp](Q.Y.A1),
+			},
+		},
+		Q: sw_bn254.G2Affine{
+			X: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.X.A0),
+				A1: NewElement[BN254Fp](Q.X.A1),
+			},
+			Y: fields_bn254.E2{
+				A0: NewElement[BN254Fp](Q.Y.A0),
+				A1: NewElement[BN254Fp](Q.Y.A1),
+			},
+		},
+	}
+
+	wrapperOpt := test.WithApiWrapper(func(api frontend.API) frontend.API {
+		napi, err := NewField[BN254Fp](api)
+		assert.NoError(err)
+		return napi
+	})
+	// TODO @gbotrel test engine when test.SetAllVariablesAsConstants() also consider witness as
+	// constant. It shouldn't.
+	// assert.ProverSucceeded(&circuit, &witness, test.WithCurves(testCurve), test.NoSerialization(), test.WithBackends(backend.GROTH16))
+
+	err := test.IsSolved(&circuit, &witness, testCurve.ScalarField(), wrapperOpt) //, test.SetAllVariablesAsConstants())
+	// assert.NoError(err)
+	// _, err = frontend.Compile(testCurve.ScalarField(), r1cs.NewBuilder, &circuit, frontend.WithBuilderWrapper(builderWrapper[BLS12377Fp]()))
+	assert.NoError(err)
+	// TODO: create proof
 }
 
 type pairingBLS377 struct {
