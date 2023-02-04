@@ -21,7 +21,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr"
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr/fft"
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
-	"github.com/consensys/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
 
 	kzgg "github.com/consensys/gnark-crypto/kzg"
 )

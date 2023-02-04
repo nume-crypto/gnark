@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/consensys/gnark/backend/hint"
 	"github.com/fxamacker/cbor/v2"
+	"github.com/nume-crypto/gnark/backend/hint"
 )
 
 // Hint represents a solver hint

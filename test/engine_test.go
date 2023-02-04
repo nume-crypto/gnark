@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/consensys/gnark"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/bits"
+	"github.com/nume-crypto/gnark"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/std/math/bits"
 )
 
 type hintCircuit struct {

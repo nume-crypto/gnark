@@ -23,11 +23,11 @@ import (
 
 	"errors"
 	"fmt"
-	bw6_633witness "github.com/consensys/gnark/internal/backend/bw6-633/witness"
+	bw6_633witness "github.com/nume-crypto/gnark/internal/backend/bw6-633/witness"
 	"io"
 	"time"
 
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 var (

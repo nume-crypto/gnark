@@ -21,11 +21,11 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls24-315"
 
-	"github.com/consensys/gnark/internal/backend/bls24-315/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bls24-315/cs"
 
-	bls24_315witness "github.com/consensys/gnark/internal/backend/bls24-315/witness"
+	bls24_315witness "github.com/nume-crypto/gnark/internal/backend/bls24-315/witness"
 
-	bls24_315plonk "github.com/consensys/gnark/internal/backend/bls24-315/plonk"
+	bls24_315plonk "github.com/nume-crypto/gnark/internal/backend/bls24-315/plonk"
 
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg"
@@ -34,9 +34,9 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/scs"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/cs/scs"
 )
 
 //--------------------//

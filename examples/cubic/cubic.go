@@ -15,7 +15,7 @@
 package cubic
 
 import (
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // Circuit defines a simple circuit

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 func init() {

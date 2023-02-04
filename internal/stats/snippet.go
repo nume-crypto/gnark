@@ -4,13 +4,13 @@ import (
 	"math"
 	"sync"
 
-	"github.com/consensys/gnark"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/algebra/sw_bls12377"
-	"github.com/consensys/gnark/std/algebra/sw_bls24315"
-	"github.com/consensys/gnark/std/hash/mimc"
-	"github.com/consensys/gnark/std/math/bits"
+	"github.com/nume-crypto/gnark"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls12377"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls24315"
+	"github.com/nume-crypto/gnark/std/hash/mimc"
+	"github.com/nume-crypto/gnark/std/math/bits"
 )
 
 var (

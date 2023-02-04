@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/frontend/schema"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 

@@ -29,16 +29,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/witness"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/schema"
-	"github.com/consensys/gnark/internal/backend/ioutils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/internal/backend/ioutils"
+	"github.com/nume-crypto/gnark/logger"
 
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr"
 
-	bw6_761witness "github.com/consensys/gnark/internal/backend/bw6-761/witness"
+	bw6_761witness "github.com/nume-crypto/gnark/internal/backend/bw6-761/witness"
 )
 
 // SparseR1CS represents a Plonk like circuit

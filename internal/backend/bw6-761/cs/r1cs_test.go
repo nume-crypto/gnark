@@ -19,13 +19,13 @@ package cs_test
 import (
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
-	"github.com/consensys/gnark/internal/backend/circuits"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/cs/r1cs"
+	"github.com/nume-crypto/gnark/internal/backend/circuits"
 	"reflect"
 	"testing"
 
-	"github.com/consensys/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
 )
 
 func TestSerialization(t *testing.T) {

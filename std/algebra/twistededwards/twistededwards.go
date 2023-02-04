@@ -29,7 +29,7 @@ import (
 	edbw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/twistededwards"
 	edbw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/twistededwards"
 	"github.com/consensys/gnark-crypto/ecc/twistededwards"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // Curve methods implemented by a twisted edwards curve inside a circuit

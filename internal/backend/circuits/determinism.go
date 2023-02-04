@@ -1,8 +1,8 @@
 package circuits
 
 import (
-	"github.com/consensys/gnark"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 type determinism struct {

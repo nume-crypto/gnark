@@ -27,19 +27,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/witness"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/schema"
-	"github.com/consensys/gnark/internal/backend/ioutils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/internal/backend/ioutils"
+	"github.com/nume-crypto/gnark/logger"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"math"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
 
-	bls12_377witness "github.com/consensys/gnark/internal/backend/bls12-377/witness"
+	bls12_377witness "github.com/nume-crypto/gnark/internal/backend/bls12-377/witness"
 )
 
 // R1CS describes a set of R1CS constraint

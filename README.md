@@ -134,16 +134,16 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our [code of condu
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/consensys/gnark/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/nume-crypto/gnark/tags).
 
 ## License
 
 This project is licensed under the Apache 2 License - see the [LICENSE](LICENSE) file for details
 
-[`gnark` Issues]: https://github.com/consensys/gnark/issues
+[`gnark` Issues]: https://github.com/nume-crypto/gnark/issues
 [`gnark` Playground]: https://play.gnark.io
 [`gnark` User Documentation]: https://docs.gnark.consensys.net/en/latest/
-[GitHub discussions]: https://github.com/ConsenSys/gnark/discussions
+[GitHub discussions]: https://github.com/nume-crypto/gnark/discussions
 [Proving schemes and curves]: https://docs.gnark.consensys.net/en/latest/Concepts/schemes_curves/
 [`gnark-announce`]: https://groups.google.com/g/gnark-announce
 [@gnark_team]: https://twitter.com/gnark_team

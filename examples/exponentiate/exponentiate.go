@@ -15,8 +15,8 @@
 package exponentiate
 
 import (
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/bits"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/std/math/bits"
 )
 
 // Circuit y == x**e

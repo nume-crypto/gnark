@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // NTrits returns the first trits of the input. The number of returned trits is

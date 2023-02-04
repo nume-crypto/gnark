@@ -17,7 +17,7 @@ package compiled
 import (
 	"strings"
 
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/frontend/schema"
 )
 
 // LogEntry is used as a shared data structure between the frontend and the backend

@@ -1,8 +1,8 @@
 package std
 
 import (
-	"github.com/consensys/gnark/backend/witness"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 func ExampleRegisterHints() {

@@ -4,9 +4,9 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend/schema"
 )
 
 type NewBuilder func(ecc.ID, CompileConfig) (Builder, error)

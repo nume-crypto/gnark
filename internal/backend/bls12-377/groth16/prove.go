@@ -21,16 +21,16 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-377"
 
-	"github.com/consensys/gnark/internal/backend/bls12-377/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bls12-377/cs"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr/fft"
 
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	bls12_377witness "github.com/consensys/gnark/internal/backend/bls12-377/witness"
-	"github.com/consensys/gnark/internal/utils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	bls12_377witness "github.com/nume-crypto/gnark/internal/backend/bls12-377/witness"
+	"github.com/nume-crypto/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/logger"
 	"math/big"
 	"runtime"
 	"time"

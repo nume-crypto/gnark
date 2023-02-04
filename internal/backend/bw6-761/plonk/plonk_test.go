@@ -21,11 +21,11 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bw6-761"
 
-	"github.com/consensys/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
 
-	bw6_761witness "github.com/consensys/gnark/internal/backend/bw6-761/witness"
+	bw6_761witness "github.com/nume-crypto/gnark/internal/backend/bw6-761/witness"
 
-	bw6_761plonk "github.com/consensys/gnark/internal/backend/bw6-761/plonk"
+	bw6_761plonk "github.com/nume-crypto/gnark/internal/backend/bw6-761/plonk"
 
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
@@ -34,9 +34,9 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/scs"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/cs/scs"
 )
 
 //--------------------//

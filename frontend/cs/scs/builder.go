@@ -28,20 +28,20 @@ import (
 	"strings"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/cs"
-	"github.com/consensys/gnark/frontend/schema"
-	bls12377r1cs "github.com/consensys/gnark/internal/backend/bls12-377/cs"
-	bls12381r1cs "github.com/consensys/gnark/internal/backend/bls12-381/cs"
-	bls24315r1cs "github.com/consensys/gnark/internal/backend/bls24-315/cs"
-	bn254r1cs "github.com/consensys/gnark/internal/backend/bn254/cs"
-	bw6633r1cs "github.com/consensys/gnark/internal/backend/bw6-633/cs"
-	bw6761r1cs "github.com/consensys/gnark/internal/backend/bw6-761/cs"
-	"github.com/consensys/gnark/internal/utils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/cs"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	bls12377r1cs "github.com/nume-crypto/gnark/internal/backend/bls12-377/cs"
+	bls12381r1cs "github.com/nume-crypto/gnark/internal/backend/bls12-381/cs"
+	bls24315r1cs "github.com/nume-crypto/gnark/internal/backend/bls24-315/cs"
+	bn254r1cs "github.com/nume-crypto/gnark/internal/backend/bn254/cs"
+	bw6633r1cs "github.com/nume-crypto/gnark/internal/backend/bw6-633/cs"
+	bw6761r1cs "github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 func NewBuilder(curve ecc.ID, config frontend.CompileConfig) (frontend.Builder, error) {
@@ -83,7 +83,7 @@ func newBuilder(curveID ecc.ID, config frontend.CompileConfig) *scs {
 }
 
 // addPlonkConstraint creates a constraint of the for al+br+clr+k=0
-//func (system *SparseR1CS) addPlonkConstraint(l, r, o frontend.Variable, cidl, cidr, cidm1, cidm2, cido, k int, debugID ...int) {
+// func (system *SparseR1CS) addPlonkConstraint(l, r, o frontend.Variable, cidl, cidr, cidm1, cidm2, cido, k int, debugID ...int) {
 func (system *scs) addPlonkConstraint(l, r, o compiled.Term, cidl, cidr, cidm1, cidm2, cido, k int, debugID ...int) {
 
 	if len(debugID) > 0 {

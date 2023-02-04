@@ -19,12 +19,12 @@ import (
 	"log"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/plonk"
-	"github.com/consensys/gnark/frontend/cs/scs"
-	"github.com/consensys/gnark/internal/backend/bn254/cs"
-	"github.com/consensys/gnark/test"
+	"github.com/nume-crypto/gnark/backend/plonk"
+	"github.com/nume-crypto/gnark/frontend/cs/scs"
+	"github.com/nume-crypto/gnark/internal/backend/bn254/cs"
+	"github.com/nume-crypto/gnark/test"
 
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // In this example we show how to use PLONK with KZG commitments. The circuit that is

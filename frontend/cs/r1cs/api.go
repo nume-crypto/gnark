@@ -24,11 +24,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/schema"
-	"github.com/consensys/gnark/std/math/bits"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/std/math/bits"
 )
 
 // ---------------------------------------------------------------------------------------------
