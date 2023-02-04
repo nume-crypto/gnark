@@ -22,8 +22,8 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/test"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/test"
 )
 
 //--------------------------------------------------------------------

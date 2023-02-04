@@ -20,8 +20,8 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/hint"
 )
 
 // API represents the available functions to circuit developers

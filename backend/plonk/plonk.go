@@ -14,7 +14,7 @@
 
 // Package plonk implements PLONK Zero Knowledge Proof system.
 //
-// See also
+// # See also
 //
 // https://eprint.iacr.org/2019/953
 package plonk
@@ -24,30 +24,30 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/kzg"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/frontend"
 
-	"github.com/consensys/gnark/backend/witness"
-	cs_bls12377 "github.com/consensys/gnark/internal/backend/bls12-377/cs"
-	cs_bls12381 "github.com/consensys/gnark/internal/backend/bls12-381/cs"
-	cs_bls24315 "github.com/consensys/gnark/internal/backend/bls24-315/cs"
-	cs_bn254 "github.com/consensys/gnark/internal/backend/bn254/cs"
-	cs_bw6633 "github.com/consensys/gnark/internal/backend/bw6-633/cs"
-	cs_bw6761 "github.com/consensys/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/backend/witness"
+	cs_bls12377 "github.com/nume-crypto/gnark/internal/backend/bls12-377/cs"
+	cs_bls12381 "github.com/nume-crypto/gnark/internal/backend/bls12-381/cs"
+	cs_bls24315 "github.com/nume-crypto/gnark/internal/backend/bls24-315/cs"
+	cs_bn254 "github.com/nume-crypto/gnark/internal/backend/bn254/cs"
+	cs_bw6633 "github.com/nume-crypto/gnark/internal/backend/bw6-633/cs"
+	cs_bw6761 "github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
 
-	plonk_bls12377 "github.com/consensys/gnark/internal/backend/bls12-377/plonk"
-	plonk_bls12381 "github.com/consensys/gnark/internal/backend/bls12-381/plonk"
-	plonk_bls24315 "github.com/consensys/gnark/internal/backend/bls24-315/plonk"
-	plonk_bn254 "github.com/consensys/gnark/internal/backend/bn254/plonk"
-	plonk_bw6633 "github.com/consensys/gnark/internal/backend/bw6-633/plonk"
-	plonk_bw6761 "github.com/consensys/gnark/internal/backend/bw6-761/plonk"
+	plonk_bls12377 "github.com/nume-crypto/gnark/internal/backend/bls12-377/plonk"
+	plonk_bls12381 "github.com/nume-crypto/gnark/internal/backend/bls12-381/plonk"
+	plonk_bls24315 "github.com/nume-crypto/gnark/internal/backend/bls24-315/plonk"
+	plonk_bn254 "github.com/nume-crypto/gnark/internal/backend/bn254/plonk"
+	plonk_bw6633 "github.com/nume-crypto/gnark/internal/backend/bw6-633/plonk"
+	plonk_bw6761 "github.com/nume-crypto/gnark/internal/backend/bw6-761/plonk"
 
-	witness_bls12377 "github.com/consensys/gnark/internal/backend/bls12-377/witness"
-	witness_bls12381 "github.com/consensys/gnark/internal/backend/bls12-381/witness"
-	witness_bls24315 "github.com/consensys/gnark/internal/backend/bls24-315/witness"
-	witness_bn254 "github.com/consensys/gnark/internal/backend/bn254/witness"
-	witness_bw6633 "github.com/consensys/gnark/internal/backend/bw6-633/witness"
-	witness_bw6761 "github.com/consensys/gnark/internal/backend/bw6-761/witness"
+	witness_bls12377 "github.com/nume-crypto/gnark/internal/backend/bls12-377/witness"
+	witness_bls12381 "github.com/nume-crypto/gnark/internal/backend/bls12-381/witness"
+	witness_bls24315 "github.com/nume-crypto/gnark/internal/backend/bls24-315/witness"
+	witness_bn254 "github.com/nume-crypto/gnark/internal/backend/bn254/witness"
+	witness_bw6633 "github.com/nume-crypto/gnark/internal/backend/bw6-633/witness"
+	witness_bw6761 "github.com/nume-crypto/gnark/internal/backend/bw6-761/witness"
 
 	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg"
 	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg"
@@ -109,9 +109,10 @@ func Setup(ccs frontend.CompiledConstraintSystem, kzgSRS kzg.SRS) (ProvingKey, V
 
 // Prove generates PLONK proof from a circuit, associated preprocessed public data, and the witness
 // if the force flag is set:
-// 	will executes all the prover computations, even if the witness is invalid
-//  will produce an invalid proof
-//	internally, the solution vector to the SparseR1CS will be filled with random values which may impact benchmarking
+//
+//		will executes all the prover computations, even if the witness is invalid
+//	 will produce an invalid proof
+//		internally, the solution vector to the SparseR1CS will be filled with random values which may impact benchmarking
 func Prove(ccs frontend.CompiledConstraintSystem, pk ProvingKey, fullWitness *witness.Witness, opts ...backend.ProverOption) (Proof, error) {
 
 	// apply options

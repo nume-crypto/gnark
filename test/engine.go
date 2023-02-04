@@ -25,14 +25,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/consensys/gnark/debug"
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/debug"
+	"github.com/nume-crypto/gnark/frontend/schema"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/internal/utils"
 )
 
 // engine implements frontend.API

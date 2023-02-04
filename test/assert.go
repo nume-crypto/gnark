@@ -25,14 +25,14 @@ import (
 
 	"github.com/consensys/gnark"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/backend/plonk"
-	"github.com/consensys/gnark/backend/witness"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
-	"github.com/consensys/gnark/frontend/cs/scs"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/groth16"
+	"github.com/nume-crypto/gnark/backend/plonk"
+	"github.com/nume-crypto/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/cs/r1cs"
+	"github.com/nume-crypto/gnark/frontend/cs/scs"
 	"github.com/stretchr/testify/require"
 )
 

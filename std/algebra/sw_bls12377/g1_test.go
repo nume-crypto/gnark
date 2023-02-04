@@ -22,10 +22,10 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
-	"github.com/consensys/gnark/frontend/cs/scs"
-	"github.com/consensys/gnark/test"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/cs/r1cs"
+	"github.com/nume-crypto/gnark/frontend/cs/scs"
+	"github.com/nume-crypto/gnark/test"
 
 	bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
 )

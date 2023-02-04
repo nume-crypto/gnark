@@ -21,15 +21,15 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
-	backend_bls24315 "github.com/consensys/gnark/internal/backend/bls24-315/cs"
-	groth16_bls24315 "github.com/consensys/gnark/internal/backend/bls24-315/groth16"
-	"github.com/consensys/gnark/internal/backend/bls24-315/witness"
-	"github.com/consensys/gnark/std/algebra/sw_bls24315"
-	"github.com/consensys/gnark/std/hash/mimc"
-	"github.com/consensys/gnark/test"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend/cs/r1cs"
+	backend_bls24315 "github.com/nume-crypto/gnark/internal/backend/bls24-315/cs"
+	groth16_bls24315 "github.com/nume-crypto/gnark/internal/backend/bls24-315/groth16"
+	"github.com/nume-crypto/gnark/internal/backend/bls24-315/witness"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls24315"
+	"github.com/nume-crypto/gnark/std/hash/mimc"
+	"github.com/nume-crypto/gnark/test"
 )
 
 //--------------------------------------------------------------------

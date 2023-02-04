@@ -3,8 +3,8 @@ package stats
 import (
 	"testing"
 
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/test"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/test"
 )
 
 func TestCircuitStatistics(t *testing.T) {

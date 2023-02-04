@@ -21,11 +21,11 @@ import (
 	"errors"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/logger"
-	"github.com/consensys/gnark/std/hash"
+	"github.com/nume-crypto/gnark/logger"
+	"github.com/nume-crypto/gnark/std/hash"
 
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/algebra/twistededwards"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/std/algebra/twistededwards"
 
 	edwardsbls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/twistededwards"
 	edwardsbls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/twistededwards"

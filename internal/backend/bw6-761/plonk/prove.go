@@ -32,14 +32,14 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr/fft"
 
-	bw6_761witness "github.com/consensys/gnark/internal/backend/bw6-761/witness"
+	bw6_761witness "github.com/nume-crypto/gnark/internal/backend/bw6-761/witness"
 
-	"github.com/consensys/gnark/internal/backend/bw6-761/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bw6-761/cs"
 
 	"github.com/consensys/gnark-crypto/fiat-shamir"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/internal/utils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 type Proof struct {

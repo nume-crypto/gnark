@@ -23,13 +23,13 @@ import (
 
 	"errors"
 	"fmt"
-	bn254witness "github.com/consensys/gnark/internal/backend/bn254/witness"
+	bn254witness "github.com/nume-crypto/gnark/internal/backend/bn254/witness"
 	"io"
 	"time"
 
 	"text/template"
 
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 var (

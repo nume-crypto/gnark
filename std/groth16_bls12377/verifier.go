@@ -21,11 +21,11 @@ import (
 	"reflect"
 
 	bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
-	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend"
-	groth16_bls12377 "github.com/consensys/gnark/internal/backend/bls12-377/groth16"
-	"github.com/consensys/gnark/std/algebra/fields_bls12377"
-	"github.com/consensys/gnark/std/algebra/sw_bls12377"
+	"github.com/nume-crypto/gnark/backend/groth16"
+	"github.com/nume-crypto/gnark/frontend"
+	groth16_bls12377 "github.com/nume-crypto/gnark/internal/backend/bls12-377/groth16"
+	"github.com/nume-crypto/gnark/std/algebra/fields_bls12377"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls12377"
 )
 
 // Proof represents a Groth16 proof

@@ -6,26 +6,28 @@ import (
 	"reflect"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/debug"
-	"github.com/consensys/gnark/frontend/schema"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/debug"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 // Compile will generate a ConstraintSystem from the given circuit
 //
 // 1. it will first allocate the user inputs (see type Tag for more info)
 // example:
-// 		type MyCircuit struct {
-// 			Y frontend.Variable `gnark:"exponent,public"`
-// 		}
+//
+//	type MyCircuit struct {
+//		Y frontend.Variable `gnark:"exponent,public"`
+//	}
+//
 // in that case, Compile() will allocate one public variable with id "exponent"
 //
 // 2. it then calls circuit.Define(curveID, R1CS) to build the internal constraint system
 // from the declarative code
 //
-// 3. finally, it converts that to a ConstraintSystem.
-// 		if zkpID == backend.GROTH16	→ R1CS
-//		if zkpID == backend.PLONK 	→ SparseR1CS
+//  3. finally, it converts that to a ConstraintSystem.
+//     if zkpID == backend.GROTH16	→ R1CS
+//     if zkpID == backend.PLONK 	→ SparseR1CS
 //
 // initialCapacity is an optional parameter that reserves memory in slices
 // it should be set to the estimated number of constraints in the circuit, if known.

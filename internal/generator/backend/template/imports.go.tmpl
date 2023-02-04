@@ -7,7 +7,7 @@
 {{- end }}
 
 {{- define "import_backend_cs" }}
-	"github.com/consensys/gnark/internal/backend/{{toLower .Curve}}/cs"
+	"github.com/nume-crypto/gnark/internal/backend/{{toLower .Curve}}/cs"
 {{- end }}
 
 {{- define "import_fft" }}
@@ -15,15 +15,15 @@
 {{- end }}
 
 {{- define "import_witness" }}
-	{{toLower .CurveID}}witness "github.com/consensys/gnark/internal/backend/{{toLower .Curve}}/witness"
+	{{toLower .CurveID}}witness "github.com/nume-crypto/gnark/internal/backend/{{toLower .Curve}}/witness"
 {{- end }}
 
 {{- define "import_groth16" }}
-	{{toLower .CurveID}}groth16 "github.com/consensys/gnark/internal/backend/{{toLower .Curve}}/groth16"
+	{{toLower .CurveID}}groth16 "github.com/nume-crypto/gnark/internal/backend/{{toLower .Curve}}/groth16"
 {{- end }}
 
 {{- define "import_plonk" }}
-	{{toLower .CurveID}}plonk "github.com/consensys/gnark/internal/backend/{{toLower .Curve}}/plonk"
+	{{toLower .CurveID}}plonk "github.com/nume-crypto/gnark/internal/backend/{{toLower .Curve}}/plonk"
 {{- end }}
 
 {{- define "import_polynomial" }}

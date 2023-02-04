@@ -28,11 +28,11 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bw6-761"
 
-	bw6_761witness "github.com/consensys/gnark/internal/backend/bw6-761/witness"
+	bw6_761witness "github.com/nume-crypto/gnark/internal/backend/bw6-761/witness"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/fiat-shamir"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 var (

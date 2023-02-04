@@ -22,7 +22,7 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // MiMC contains the params of the Mimc hash func and the curves on which it is implemented

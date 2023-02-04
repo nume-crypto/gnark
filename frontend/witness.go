@@ -2,7 +2,7 @@ package frontend
 
 import (
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/backend/witness"
 )
 
 // NewWitness build an orderded vector of field elements from the given assignment (Circuit)

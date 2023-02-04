@@ -20,8 +20,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/algebra/fields_bls12377"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/std/algebra/fields_bls12377"
 )
 
 // GT target group of the pairing

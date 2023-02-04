@@ -3,7 +3,7 @@ package hint
 import (
 	"sync"
 
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 var registry = make(map[ID]Function)

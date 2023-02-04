@@ -3,10 +3,10 @@ package std
 import (
 	"sync"
 
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/std/algebra/sw_bls12377"
-	"github.com/consensys/gnark/std/algebra/sw_bls24315"
-	"github.com/consensys/gnark/std/math/bits"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls12377"
+	"github.com/nume-crypto/gnark/std/algebra/sw_bls24315"
+	"github.com/nume-crypto/gnark/std/math/bits"
 )
 
 var registerOnce sync.Once

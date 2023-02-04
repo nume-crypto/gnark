@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"sync/atomic"
 
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/schema"
-	"github.com/consensys/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/internal/utils"
 	"github.com/rs/zerolog"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"

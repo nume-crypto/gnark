@@ -18,10 +18,10 @@ import (
 	"io"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/witness"
-	"github.com/consensys/gnark/frontend/compiled"
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/backend/witness"
+	"github.com/nume-crypto/gnark/frontend/compiled"
+	"github.com/nume-crypto/gnark/frontend/schema"
 )
 
 // CompiledConstraintSystem interface that a compiled (=typed, and correctly routed)

@@ -22,9 +22,9 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315"
 	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
+	"github.com/nume-crypto/gnark/internal/utils"
 )
 
 // E2 element in a quadratic extension

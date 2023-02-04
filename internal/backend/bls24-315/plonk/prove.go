@@ -32,14 +32,14 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fft"
 
-	bls24_315witness "github.com/consensys/gnark/internal/backend/bls24-315/witness"
+	bls24_315witness "github.com/nume-crypto/gnark/internal/backend/bls24-315/witness"
 
-	"github.com/consensys/gnark/internal/backend/bls24-315/cs"
+	"github.com/nume-crypto/gnark/internal/backend/bls24-315/cs"
 
 	"github.com/consensys/gnark-crypto/fiat-shamir"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/internal/utils"
-	"github.com/consensys/gnark/logger"
+	"github.com/nume-crypto/gnark/backend"
+	"github.com/nume-crypto/gnark/internal/utils"
+	"github.com/nume-crypto/gnark/logger"
 )
 
 type Proof struct {

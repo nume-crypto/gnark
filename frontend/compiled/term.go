@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/consensys/gnark/frontend/schema"
+	"github.com/nume-crypto/gnark/frontend/schema"
 )
 
 // Term lightweight version of a term, no pointers. A term packs wireID, coeffID, visibility and

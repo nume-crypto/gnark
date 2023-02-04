@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/hint"
-	"github.com/consensys/gnark/frontend"
+	"github.com/nume-crypto/gnark/backend/hint"
+	"github.com/nume-crypto/gnark/frontend"
 )
 
 // phi endomorphism √-2 ∈ 𝒪₋₈
